@@ -2,7 +2,7 @@ from app.api.v1 import users  # <-- Import router users
 from app.db import models
 from app.db.database import engine
 from fastapi import FastAPI
-
+import os
 # Tạo bảng CSDL (vẫn như cũ)
 models.Base.metadata.create_all(bind=engine)
 
