@@ -140,6 +140,8 @@ services:
         condition: service_healthy
     expose: 
       - "8002"
+    volumes:
+      - ./services/product-service/uploads:/code/uploads
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:8002/ || exit 1"]
       interval: 10s
@@ -329,6 +331,8 @@ services:
       - ./infra/logstash/pipeline:/usr/share/logstash/pipeline
       - ./logs_data/api-gateway/:/var/log/nginx
       #- ./logs_data/nftables-logs/:/var/log/firewall
+      #Mount folder chua .sincedb ra o cung ben ngoai 
+      - logstash_data:/usr/share/logstash/data
     ports:
       - "5000:5000" #input
       - "9600:9600" #monitoring
@@ -352,12 +356,31 @@ services:
       - ecommerce-net
     mem_limit: 512m
     cpus: 0.5
+  metricbeat:
+    image: docker.elastic.co/beats/metricbeat:8.11.1
+    container_name: metricbeat
+    user: root
+    volumes:
+      - ./infra/metricbeat/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+      - /proc:/hostfs/proc:ro
+      - /:/hostfs:ro
+    command: metricbeat -e -system.hostfs=/hostfs --strict.perms=false -E setup.dashboards.retry.enabled=true -E setup.dashboards.retry.maximum=0
+    depends_on:
+      - elasticsearch
+      - kibana
+    networks:
+      - ecommerce-net
+    restart: on-failure
+
 volumes:
   postgres_data:
   mysql_data:
   redis_data:
   es_data:
-
+  logstash_data:
+  
 networks:
   ecommerce-net:
     driver: bridge
